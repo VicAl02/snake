@@ -5,6 +5,13 @@
 #define WIDTH 30
 #define WTIME 200 
 
+typedef enum selection_e {
+    PLAY,
+    SPEED,
+    QUIT,
+    NUM_SELECTIONS
+} Selection;
+
 void print_snake(WINDOW *window, Body *body) {
     Piece *piece = body->head;
     Point pos;
@@ -14,6 +21,85 @@ void print_snake(WINDOW *window, Body *body) {
         mvwprintw(window, pos.y, pos.x, "*");
         piece = piece->next;
     }
+}
+
+// TODO: Refactor to be more concise.
+void set_selection_cursor(WINDOW *menu_win, Selection selection) {
+    switch (selection) {
+        case PLAY:
+            mvwprintw(menu_win, 3, 1, ">");
+            mvwprintw(menu_win, 4, 1, " ");
+            mvwprintw(menu_win, 5, 1, " ");
+            break;
+        case SPEED:
+            mvwprintw(menu_win, 3, 1, " ");
+            mvwprintw(menu_win, 4, 1, ">");
+            mvwprintw(menu_win, 5, 1, " ");
+            break;
+        case QUIT:
+            mvwprintw(menu_win, 3, 1, " ");
+            mvwprintw(menu_win, 4, 1, " ");
+            mvwprintw(menu_win, 5, 1, ">");
+            break;
+        default:
+            break;
+    }
+    
+    wrefresh(menu_win);
+
+}
+
+void menu() {
+    WINDOW *menu_win = newwin(HEIGHT, WIDTH, 0, 0);
+    
+    keypad(menu_win, TRUE);
+    box(menu_win, 0, 0);
+    
+    mvwprintw(menu_win, 1, 1, "Welcome to Snake!");
+    mvwprintw(menu_win, 3, 1, ">");
+    mvwprintw(menu_win, 3, 3, "Play");
+    mvwprintw(menu_win, 4, 3, "Speed");
+    mvwprintw(menu_win, 5, 3, "Quit");    
+
+    timeout(-1);
+    int c;
+    Selection selection = PLAY;
+    int cursor_y = 1;
+    while(1) {
+        c = wgetch(menu_win);
+
+        switch (c) {
+            case KEY_UP:
+                selection = (selection - 1) % NUM_SELECTIONS;
+                break;
+            case KEY_DOWN:
+                selection = (selection + 1) % NUM_SELECTIONS;
+                break;
+            case 10:
+                // Enter
+                switch (selection) {
+                    case PLAY:
+                        return;
+                    case SPEED:
+                        // TODO: Implement speed menu selection.
+                        break;
+                    case QUIT:
+                        endwin();
+                        exit(0);
+                        break;
+                    default:
+                        break;
+                }
+            default:
+                break;
+        }
+
+        set_selection_cursor(menu_win, selection);
+    }
+
+    wrefresh(menu_win);
+    wgetch(menu_win);
+    delwin(menu_win);
 }
 
 int main() {
@@ -28,6 +114,8 @@ int main() {
     noecho();
     cbreak();
 
+    menu();
+
     window = newwin(HEIGHT, WIDTH, 0, 0);
     keypad(window, TRUE);
 
@@ -41,7 +129,7 @@ int main() {
     mvwprintw(window, apple.y, apple.x, "O");
 
     while (1) {
-        box(window, '|', '-'); 
+        box(window, 0, 0); 
 
         c = wgetch(window);
         wtimeout(window, 0);
@@ -87,7 +175,10 @@ int main() {
         napms(WTIME);
     }
     
+    s_free_body(body);
     delwin(window);
+
+    menu();
 
     endwin();
 

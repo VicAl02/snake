@@ -25,6 +25,19 @@ Body *s_new_body(Point pos, Point dir) {
     return body;
 }
 
+void s_free_body(Body *body) {
+    Piece *piece = body->head;
+    Piece *next;
+
+    while (piece != NULL) {
+        next = piece->next;
+        free(piece);
+        piece = next;
+    }
+
+    free(body);
+}
+
 // tail insertion
 void s_insert_piece(Body *body) {    
     Point dir = body->tail->dir;
