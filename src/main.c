@@ -3,7 +3,7 @@
 
 #define HEIGHT 20
 #define WIDTH 30
-#define WTIME 500 
+#define WTIME 200 
 
 void print_snake(WINDOW *window, Body *body) {
     Piece *piece = body->head;
@@ -37,11 +37,16 @@ int main() {
     // wait for first input
     wtimeout(window, -1);
 
+    Point apple = s_rand_pos(body, (Point){1, 1}, (Point){WIDTH - 2, HEIGHT - 2});
+    mvwprintw(window, apple.y, apple.x, "O");
+
     while (1) {
         box(window, '|', '-'); 
 
-        int c = wgetch(window);
+        c = wgetch(window);
         wtimeout(window, 0);
+
+        // TODO: Prevent spamming keys.
 
         switch (c) {
             case KEY_LEFT:
@@ -56,9 +61,6 @@ int main() {
             case KEY_DOWN:
                 s_move_down(body);
                 break;
-            case KEY_BACKSPACE:
-                // insert new piece
-                s_insert_piece(body);
             default:
                 break;            
         }
@@ -67,12 +69,24 @@ int main() {
         Point tail = body->tail->pos;
         mvwprintw(window, tail.y, tail.x, " ");
         s_forward(body, body->head->dir);
+        
+        if (s_has_collided(body, (Point){1, 1}, (Point){WIDTH - 1, HEIGHT - 1})) {
+            break;
+        }
+
+        if (s_has_eaten(body, apple)) {
+            s_insert_piece(body);
+            mvwprintw(window, apple.y, apple.x, " ");
+            apple = s_rand_pos(body, (Point){1, 1}, (Point){WIDTH - 2, HEIGHT - 2});
+            mvwprintw(window, apple.y, apple.x, "O");
+        }
+
         print_snake(window, body);
         wrefresh(window);
 
         napms(WTIME);
     }
-
+    
     delwin(window);
 
     endwin();

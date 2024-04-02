@@ -25,3 +25,6 @@ void s_move_up(Body *);
 void s_move_down(Body *);
 void s_forward(Body *, Point); 
 void s_print_body(Body *);
+Point s_rand_pos(Body *body, Point upper_left, Point lower_right);
+int s_has_eaten(Body *body, Point apple);
+int s_has_collided(Body *body, Point upper_left, Point lower_right);

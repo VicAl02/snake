@@ -88,3 +88,52 @@ void s_print_body(Body *l) {
         i++;
     }
 }
+
+int s_is_point_in_body(Body *body, Point pos) {
+    Piece *piece = body->head;
+
+    while (piece != NULL) {
+        if (piece->pos.x == pos.x && piece->pos.y == pos.y) {
+            return 1;
+        }
+        piece = piece->next;
+    }
+
+    return 0;
+}
+
+Point s_rand_pos(Body *body, Point upper_left, Point lower_right) {
+    Point pos;
+
+    do {
+        pos.x = rand() % (lower_right.x - upper_left.x) + upper_left.x;
+        pos.y = rand() % (lower_right.y - upper_left.y) + upper_left.y;
+    } while (s_is_point_in_body(body, pos));    
+
+    return pos;
+}
+
+int s_has_eaten(Body *body, Point apple) {
+    return body->head->pos.x == apple.x && body->head->pos.y == apple.y;
+}
+
+int s_has_collided(Body *body, Point upper_left, Point lower_right) {
+    Piece *piece = body->head;
+    Point pos = piece->pos;
+
+    // check if the head is out of bounds
+    if (pos.x < upper_left.x || pos.x >= lower_right.x || pos.y < upper_left.y || pos.y >= lower_right.y) {
+        return 1;
+    }
+
+    // check if the head has collided with the body
+    piece = piece->next;
+    while (piece != NULL) {
+        if (pos.x == piece->pos.x && pos.y == piece->pos.y) {
+            return 1;
+        }
+        piece = piece->next;
+    }
+
+    return 0;
+}
