@@ -1,8 +1,8 @@
 #include <ncurses.h>
 #include "../include/snake.h"
 
-#define HEIGHT 20
-#define WIDTH 30
+#define MAX_WIDTH 30
+#define MAX_HEIGHT 15
 #define WTIME_SLOW 400
 #define WTIME_MEDIUM 200
 #define WTIME_FAST 100
@@ -34,34 +34,55 @@ void print_snake(WINDOW *window, Body *body) {
     }
 }
 
-// TODO: Refactor to be more concise.
-void set_selection_cursor(WINDOW *menu_win, int option_index, int num_options) {
+void set_selection_cursor(WINDOW *menu_win, int option_index, int num_options, int first_option_y, int x) {
     for (int i = 0; i < num_options; i++) {
         if (i == option_index) {
-            mvwprintw(menu_win, 3 + i, 1, ">");
+            mvwprintw(menu_win, first_option_y + i, x, ">");
         } else {
-            mvwprintw(menu_win, 3 + i, 1, " ");
+            mvwprintw(menu_win, first_option_y + i, x, " ");
         }
     }
     
     wrefresh(menu_win);
 }
 
+void clear_menu(WINDOW *menu_win) {
+    werase(menu_win);
+    wrefresh(menu_win);
+    delwin(menu_win);
+}
+
 void speed_menu() {
-    WINDOW *speed_win = newwin(HEIGHT, WIDTH, 0, 0);
+    SpeedSel selection;
+
+    switch (wtime) {
+        case WTIME_SLOW:
+            selection = SLOW;
+            break;
+        case WTIME_MEDIUM:
+            selection = MEDIUM;
+            break;
+        case WTIME_FAST:
+            selection = FAST;
+            break;
+    }
+
+    WINDOW *speed_win = newwin(LINES, COLS, 0, 0);
     
     keypad(speed_win, TRUE);
-    box(speed_win, 0, 0);
     
-    mvwprintw(speed_win, 1, 1, "Speed");
-    mvwprintw(speed_win, 3, 3, "Slow");
-    mvwprintw(speed_win, 4, 1, ">");
-    mvwprintw(speed_win, 4, 3, "Medium");
-    mvwprintw(speed_win, 5, 3, "Fast");    
+    int x = (COLS - 30) / 2;  
+    int y = (LINES - 5) / 2;
+
+    mvwprintw(speed_win, y, x, "Speed");
+    mvwprintw(speed_win, y + 2 + selection, x, ">");
+    mvwprintw(speed_win, y + 2, x + 2, "Slow");
+    mvwprintw(speed_win, y + 3, x + 2, "Medium");
+    mvwprintw(speed_win, y + 4, x + 2, "Fast");   
+    wrefresh(speed_win); 
 
     timeout(-1);
     int c;
-    SpeedSel selection = MEDIUM;
     while(1) {
         c = wgetch(speed_win);
 
@@ -77,15 +98,15 @@ void speed_menu() {
                 switch (selection) {
                     case SLOW:
                         wtime = WTIME_SLOW;
-                        delwin(speed_win);
+                        clear_menu(speed_win);
                         return;
                     case MEDIUM:
                         wtime = WTIME_MEDIUM;
-                        delwin(speed_win);
+                        clear_menu(speed_win);
                         return;
                     case FAST:
                         wtime = WTIME_FAST;
-                        delwin(speed_win);
+                        clear_menu(speed_win);
                         return;
                     default:
                         break;
@@ -94,32 +115,30 @@ void speed_menu() {
                 break;
         }
 
-        set_selection_cursor(speed_win, selection, NUM_SPEEDS);
+        set_selection_cursor(speed_win, selection, NUM_SPEEDS, y + 2, x);
     }
 }
 
-WINDOW *create_menu() {
-    WINDOW *menu_win = newwin(HEIGHT, WIDTH, 0, 0);
+WINDOW *create_menu(int y, int x) {
+    WINDOW *menu_win = newwin(LINES, COLS, 0, 0);
     
     keypad(menu_win, TRUE);
-    box(menu_win, 0, 0);
 
-    mvwprintw(menu_win, 1, 1, "Welcome to Snake!");
-    mvwprintw(menu_win, 3, 1, ">");
-    mvwprintw(menu_win, 3, 3, "Play");
-    mvwprintw(menu_win, 4, 3, "Speed");
-    mvwprintw(menu_win, 5, 3, "Quit");    
+    mvwprintw(menu_win, y, x, "Welcome to Snake!");
+    mvwprintw(menu_win, y + 2, x, ">");
+    mvwprintw(menu_win, y + 2, x + 2, "Play");
+    mvwprintw(menu_win, y + 3, x + 2, "Speed");
+    mvwprintw(menu_win, y + 4, x + 2, "Quit");    
     wrefresh(menu_win);
 
     return menu_win;
 }
 
-void clear_menu(WINDOW *menu_win) {
-    delwin(menu_win);
-}
-
 void menu() {
-    WINDOW *menu_win = create_menu();
+    int x = (COLS > 30) ? (COLS - 30) / 2 : 1;
+    int y = (LINES - 5) / 2;
+
+    WINDOW *menu_win = create_menu(y, x);
 
     timeout(-1);
     int c;
@@ -143,7 +162,7 @@ void menu() {
                     case SPEED:
                         clear_menu(menu_win);
                         speed_menu();
-                        menu_win = create_menu();
+                        menu_win = create_menu(y, x);
                         break;
                     case QUIT:
                         endwin();
@@ -151,26 +170,29 @@ void menu() {
                 }
         }
 
-        set_selection_cursor(menu_win, selection, NUM_SELECTIONS);
+        set_selection_cursor(menu_win, selection, NUM_SELECTIONS, y + 2, x);
     }
 }
 
 int main() {
     WINDOW *window;
-    int c;
-    Point init_pos = {WIDTH / 2, HEIGHT / 2};
+    int c, width, height;
 
     initscr();
     curs_set(0);
     noecho();
     cbreak();
-
+    
     while(1) {
         menu();
+        
+        width = (COLS > MAX_WIDTH) ? MAX_WIDTH : COLS;
+        height = (LINES > MAX_HEIGHT) ? MAX_HEIGHT : LINES;
 
+        Point init_pos = (Point){width / 2, height / 2};
         Body *body = s_new_body(init_pos, (Point){0, 0});
 
-        window = newwin(HEIGHT, WIDTH, 0, 0);
+        window = newwin(height, width, (LINES - height) / 2, (COLS - width) / 2);
         keypad(window, TRUE);
 
         mvwprintw(window, init_pos.y, init_pos.x, "*");
@@ -179,7 +201,7 @@ int main() {
         // wait for first input
         wtimeout(window, -1);
 
-        Point apple = s_rand_pos(body, (Point){1, 1}, (Point){WIDTH - 2, HEIGHT - 2});
+        Point apple = s_rand_pos(body, (Point){1, 1}, (Point){width - 2, height - 2});
         mvwprintw(window, apple.y, apple.x, "O");
 
         while (1) {
@@ -212,14 +234,14 @@ int main() {
             mvwprintw(window, tail.y, tail.x, " ");
             s_forward(body, body->head->dir);
             
-            if (s_has_collided(body, (Point){1, 1}, (Point){WIDTH - 1, HEIGHT - 1})) {
+            if (s_has_collided(body, (Point){1, 1}, (Point){width - 1, height - 1})) {
                 break;
             }
 
             if (s_has_eaten(body, apple)) {
                 s_insert_piece(body);
                 mvwprintw(window, apple.y, apple.x, " ");
-                apple = s_rand_pos(body, (Point){1, 1}, (Point){WIDTH - 2, HEIGHT - 2});
+                apple = s_rand_pos(body, (Point){1, 1}, (Point){width - 2, height - 2});
                 mvwprintw(window, apple.y, apple.x, "O");
             }
 
