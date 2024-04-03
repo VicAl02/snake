@@ -35,29 +35,16 @@ void print_snake(WINDOW *window, Body *body) {
 }
 
 // TODO: Refactor to be more concise.
-void set_selection_cursor(WINDOW *menu_win, MenuSel selection) {
-    switch (selection) {
-        case PLAY:
-            mvwprintw(menu_win, 3, 1, ">");
-            mvwprintw(menu_win, 4, 1, " ");
-            mvwprintw(menu_win, 5, 1, " ");
-            break;
-        case SPEED:
-            mvwprintw(menu_win, 3, 1, " ");
-            mvwprintw(menu_win, 4, 1, ">");
-            mvwprintw(menu_win, 5, 1, " ");
-            break;
-        case QUIT:
-            mvwprintw(menu_win, 3, 1, " ");
-            mvwprintw(menu_win, 4, 1, " ");
-            mvwprintw(menu_win, 5, 1, ">");
-            break;
-        default:
-            break;
+void set_selection_cursor(WINDOW *menu_win, int option_index, int num_options) {
+    for (int i = 0; i < num_options; i++) {
+        if (i == option_index) {
+            mvwprintw(menu_win, 3 + i, 1, ">");
+        } else {
+            mvwprintw(menu_win, 3 + i, 1, " ");
+        }
     }
     
     wrefresh(menu_win);
-
 }
 
 void speed_menu() {
@@ -107,22 +94,32 @@ void speed_menu() {
                 break;
         }
 
-        set_selection_cursor(speed_win, selection);
+        set_selection_cursor(speed_win, selection, NUM_SPEEDS);
     }
 }
 
-void menu() {
+WINDOW *create_menu() {
     WINDOW *menu_win = newwin(HEIGHT, WIDTH, 0, 0);
     
     keypad(menu_win, TRUE);
     box(menu_win, 0, 0);
-    
+
     mvwprintw(menu_win, 1, 1, "Welcome to Snake!");
     mvwprintw(menu_win, 3, 1, ">");
     mvwprintw(menu_win, 3, 3, "Play");
     mvwprintw(menu_win, 4, 3, "Speed");
     mvwprintw(menu_win, 5, 3, "Quit");    
     wrefresh(menu_win);
+
+    return menu_win;
+}
+
+void clear_menu(WINDOW *menu_win) {
+    delwin(menu_win);
+}
+
+void menu() {
+    WINDOW *menu_win = create_menu();
 
     timeout(-1);
     int c;
@@ -141,33 +138,20 @@ void menu() {
                 // Enter
                 switch (selection) {
                     case PLAY:
-                        delwin(menu_win);
+                        clear_menu(menu_win);
                         return;
                     case SPEED:
-                        delwin(menu_win);
+                        clear_menu(menu_win);
                         speed_menu();
-                        menu_win = newwin(HEIGHT, WIDTH, 0, 0);
-                        keypad(menu_win, TRUE);
-                        box(menu_win, 0, 0);
-                        mvwprintw(menu_win, 1, 1, "Welcome to Snake!");
-                        mvwprintw(menu_win, 3, 1, ">");
-                        mvwprintw(menu_win, 3, 3, "Play");
-                        mvwprintw(menu_win, 4, 3, "Speed");
-                        mvwprintw(menu_win, 5, 3, "Quit");
-                        wrefresh(menu_win);
+                        menu_win = create_menu();
                         break;
                     case QUIT:
                         endwin();
                         exit(0);
-                        break;
-                    default:
-                        break;
                 }
-            default:
-                break;
         }
 
-        set_selection_cursor(menu_win, selection);
+        set_selection_cursor(menu_win, selection, NUM_SELECTIONS);
     }
 }
 
@@ -175,7 +159,6 @@ int main() {
     WINDOW *window;
     int c;
     Point init_pos = {WIDTH / 2, HEIGHT / 2};
-    Point init_dir = {0, -1};
 
     initscr();
     curs_set(0);
@@ -185,7 +168,7 @@ int main() {
     while(1) {
         menu();
 
-        Body *body = s_new_body(init_pos, init_dir);
+        Body *body = s_new_body(init_pos, (Point){0, 0});
 
         window = newwin(HEIGHT, WIDTH, 0, 0);
         keypad(window, TRUE);
@@ -221,7 +204,7 @@ int main() {
                     s_move_down(body);
                     break;
                 default:
-                    break;            
+                    break;
             }
 
             Point head = body->head->pos;    

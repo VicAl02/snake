@@ -49,21 +49,29 @@ void s_insert_piece(Body *body) {
 }
 
 void s_move_left(Body *body) {
+    if (body->head->dir.x == 1) return;
+
     body->head->dir.x = -1;
     body->head->dir.y = 0;
 }
 
 void s_move_right(Body *body) {
+    if (body->head->dir.x == -1) return;
+
     body->head->dir.x = 1;
     body->head->dir.y = 0;
 }
 
 void s_move_up(Body *body) {
+    if (body->head->dir.y == 1) return;
+
     body->head->dir.x = 0;
     body->head->dir.y = -1;
 }
 
 void s_move_down(Body *body) {
+    if (body->head->dir.y == -1) return;
+
     body->head->dir.x = 0;
     body->head->dir.y = 1;
 }
