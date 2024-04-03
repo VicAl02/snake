@@ -1,5 +1,5 @@
 snake: src/snake.c src/main.c
-	gcc -g -o bin/$@ $^ -lncurses -lm
+	gcc -g -o bin/$@ $^ -lncurses
 
 run: bin/snake
 	./$^
